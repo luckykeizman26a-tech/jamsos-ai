@@ -20,70 +20,52 @@ const corsHeaders = {
   "Content-Type": "application/json"
 };
 
-let cachedModel = null;
-
-// Otomatis mendeteksi model Gemini yang tersedia dan aktif di akun Google Anda
-async function getAvailableModel(apiKey) {
-  if (cachedModel) return cachedModel;
-
-  try {
-    const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}`);
-    if (listRes.ok) {
-      const data = await listRes.json();
-      const available = data.models
-        ?.filter((m) => m.supportedGenerationMethods?.includes("generateContent"))
-        ?.map((m) => m.name.replace(/^models\//, "")) || [];
-
-      // Cari model flash terbaru yang aktif di akun Anda
-      const chosen = available.find((m) => m.includes("2.0-flash")) ||
-                     available.find((m) => m.includes("flash")) ||
-                     available[0];
-
-      if (chosen) {
-        cachedModel = chosen;
-        console.log("Model Gemini yang berhasil terdeteksi:", cachedModel);
-        return cachedModel;
-      }
-    }
-  } catch (err) {
-    console.warn("Gagal mendeteksi daftar model, menggunakan fallback:", err);
-  }
-
-  // Fallback standar
-  return "gemini-2.0-flash";
-}
-
 async function callGemini(messages, apiKey) {
-  const model = await getAvailableModel(apiKey);
-
   const contents = messages.map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content || "" }]
   }));
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  // Daftar model aktif Google (memprioritaskan 2.0-flash yang didukung Google saat ini)
+  const models = [
+    process.env.GEMINI_MODEL,
+    "gemini-2.0-flash",
+    "gemini-2.5-flash",
+    "gemini-flash-latest"
+  ].filter(Boolean);
 
-  const payload = {
-    systemInstruction: { parts: [{ text: SYSTEM }] },
-    contents: contents,
-    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-  };
+  let lastError = "";
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  for (const model of models) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const payload = {
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: contents,
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
+      };
 
-  if (!res.ok) {
-    const errText = await res.text();
-    console.error("Gemini API Error:", res.status, errText);
-    throw new Error(`Gemini Error ${res.status}: ${errText}`);
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+        if (text) return text;
+      } else {
+        const errText = await res.text();
+        console.warn(`Percobaan model ${model} gagal (${res.status}): ${errText}`);
+        lastError = errText;
+      }
+    } catch (e) {
+      lastError = e.message;
+    }
   }
 
-  const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-  return text;
+  throw new Error(lastError || "Semua model gagal merespons");
 }
 
 export default async (req) => {
