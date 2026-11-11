@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<title>Jamsos.ai – sahabat jaminan sosial pekerja</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--blue:#204f9f;--green:#3da535;--bg:#f4f7fb;--surface:#fff;--ink:#16202e;--muted:#5b6778;--line:#d9e1ec;--user:#204f9f;--userink:#fff;--bot:#fff;--chip:#eaf1fb;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e1520;--surface:#151e2c;--ink:#e8eef7;--muted:#9aa8bb;--line:#26334a;--bot:#1a2536;--chip:#1b2a42;--user:#2e66c4}}
+:root[data-theme="dark"]{--bg:#0e1520;--surface:#151e2c;--ink:#e8eef7;--muted:#9aa8bb;--line:#26334a;--bot:#1a2536;--chip:#1b2a42;--user:#2e66c4}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;display:flex;justify-content:center}
+.app{width:100%;max-width:760px;height:100%;display:flex;flex-direction:column;background:var(--surface);border-inline:1px solid var(--line);box-shadow:0 0 40px rgba(12,84,153,.12)}
+:root{--blue:#0e76b5;--green:#3cb54c;--lime:#d6de28}
+header.top{position:relative;overflow:hidden;background:linear-gradient(105deg,#0c5499 0%,#0e76b5 48%,#3cb54c 100%);color:#fff;padding:12px 16px 15px}
+header.top::after{content:"";position:absolute;left:0;right:0;bottom:0;height:5px;background:linear-gradient(90deg,#3cb54c 0 34%,#d6de28 34% 67%,#0e76b5 67%)}
+header.top .decor{position:absolute;right:0;top:0;height:100%;width:60%;pointer-events:none}
+header.top .row{position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{display:flex;align-items:center;gap:11px;min-width:0}.logo .mk{flex:none;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}
+.wm b{display:block;font-size:28px;line-height:1;font-weight:800;letter-spacing:-.04em}.wm b i{font-style:normal;color:#d6de28}
+.wm small{display:block;margin-top:4px;font-size:12.5px;opacity:.92;letter-spacing:.01em}
+.partner2{flex:none;background:#fff;border-radius:14px;padding:7px 12px;box-shadow:0 4px 14px rgba(0,0,0,.18)}.partner2 img{height:30px;width:auto;display:block}
+@media (max-width:460px){.wm small{display:none}.wm b{font-size:24px}.partner2 img{height:24px}.partner2{padding:6px 9px}header.top{padding:11px 12px 14px}}
+#log{flex:1;overflow-y:auto;padding:18px 16px;display:flex;flex-direction:column;gap:12px;background:radial-gradient(420px 260px at 100% 0,#d6de2822,transparent 70%),radial-gradient(420px 300px at 0 100%,#0e76b51f,transparent 70%),var(--surface)}
+.m{max-width:86%;padding:10px 14px;border-radius:16px;word-wrap:break-word;overflow-wrap:anywhere}
+.m p{margin:0 0 8px}.m p:last-child{margin:0}.m ol,.m ul{margin:4px 0 8px;padding-left:22px}.m a{color:inherit;text-decoration:underline}
+.bot{align-self:flex-start;background:var(--bot);border:1px solid var(--line);border-bottom-left-radius:4px;box-shadow:inset 4px 0 0 #3cb54c,0 1px 2px rgba(0,0,0,.05)}
+.me{align-self:flex-end;background:linear-gradient(135deg,#0e76b5,#0c5499);color:#fff;border-bottom-right-radius:4px;box-shadow:0 2px 6px rgba(12,84,153,.25);white-space:pre-wrap}
+.err{align-self:flex-start;color:#b3261e;font-size:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.chips button{font:inherit;font-size:14px;background:var(--surface);color:#0e76b5;font-weight:600;border:1.5px solid #0e76b566;border-radius:999px;padding:7px 14px;cursor:pointer;transition:transform .15s,background .15s}
+.chips button:hover{background:#0e76b5;color:#fff;transform:translateY(-2px)}
+form{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+textarea{flex:1;resize:none;font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:10px 14px;max-height:120px}
+button.send{font:inherit;font-weight:600;background:linear-gradient(135deg,#2b8a3a,#1f7a2f);color:#fff;border:0;border-radius:14px;padding:0 20px;cursor:pointer}
+button.send:disabled{opacity:.5;cursor:default}
+.credit{font-size:12.5px;text-align:center;padding:0 16px 8px;color:var(--ink)}
+.credit b{color:var(--blue)}
+.note{font-size:12px;color:var(--muted);text-align:center;padding:0 16px 8px}
+.hero{align-self:center;text-align:center;padding:22px 10px 10px;max-width:640px;width:100%}
+.hero .mkwrap{display:inline-block;border-radius:50%;padding:12px;background:radial-gradient(circle,#d6de2855,transparent 68%)}
+.hero .mk{display:block;animation:fl 4s ease-in-out infinite;filter:drop-shadow(0 8px 14px rgba(12,84,153,.3))}
+@keyframes fl{50%{transform:translateY(-6px)}}
+.hero h2{font-size:30px;font-weight:800;letter-spacing:-.03em;margin:10px 0 4px}.hero h2 span{background:linear-gradient(90deg,#3cb54c,#0e76b5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{margin:2px 0 0;color:var(--muted);font-size:15px}
+.cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:18px;text-align:left}
+@media (min-width:600px){.cards{grid-template-columns:repeat(3,1fr)}}
+.card{position:relative;display:flex;flex-direction:column;gap:6px;font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 12px 12px;cursor:pointer;text-align:left;overflow:hidden;transition:transform .15s,box-shadow .15s,border-color .15s}
+.card::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--c)}
+.card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(12,84,153,.18);border-color:var(--c)}
+.card .ic{width:40px;height:40px;border-radius:12px;background:var(--c);display:grid;place-items:center;margin-bottom:2px;flex:none}
+.card .ic svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.card b{font-size:14.5px;line-height:1.25}.card small{font-size:12.5px;color:var(--muted);line-height:1.35}
+.hero .bcard{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 16px;margin-top:16px}
+.hero .bcard img{height:36px;width:auto;display:block}
+.hero .by{display:inline-block;margin-top:12px;font-size:13px;position:relative;padding-top:10px}
+.hero .by::before{content:"";position:absolute;top:0;left:50%;width:60px;height:3px;margin-left:-30px;border-radius:3px;background:linear-gradient(90deg,#3cb54c,#d6de28,#0e76b5)}
+.hero .by b{color:var(--blue)}
+.m a.mapbtn{display:flex;align-items:center;gap:12px;margin-top:10px;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#1f7a2f,#0e76b5);color:#fff;text-decoration:none;box-shadow:0 3px 10px rgba(14,118,181,.3)}
+.m a.mapbtn:hover{filter:brightness(1.08)}.mapbtn .pn{font-size:24px;flex:none}.mapbtn b{display:block;font-size:14.5px;line-height:1.25}.mapbtn small{display:block;font-size:12px;opacity:.9;margin-top:2px}
+.m a.lapak{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border-radius:12px;background:#fff8d6;color:#4d5200;border:1px solid #d6de28;text-decoration:none;font-size:13px;line-height:1.35}.m a.lapak:hover{background:#fff2b0}.m a.lapak .cal{font-size:20px;flex:none}.m a.lapak b{color:#2b3a00}
+.soc{display:flex;flex-direction:column;gap:8px;margin-top:10px}.m a.socbtn{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(12,84,153,.2)}.m a.socbtn:hover{filter:brightness(1.08)}.socbtn.ig{background:linear-gradient(135deg,#0c5499,#0e76b5)}.socbtn.tt{background:linear-gradient(135deg,#1f7a2f,#2b8a3a)}.socbtn.kcp{background:linear-gradient(135deg,#0c5499,#1f7a2f)}.socbtn .si{width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.22);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none}.socbtn b{display:block;font-size:14px;line-height:1.25}.socbtn small{font-size:12px;opacity:.92}
+@media (min-width:780px){header.top .row{display:grid;grid-template-columns:1fr auto 1fr;gap:16px}.partner2{justify-self:center;padding:8px 16px}.partner2 img{height:36px}header.top .row::after{content:"KCP Tangerang Bandara Soetta";justify-self:end;font-size:12px;font-weight:600;line-height:1.3;text-align:right;padding:6px 14px;border-radius:999px;background:rgba(12,84,153,.6);color:#fff;white-space:nowrap}}
+#att,.att-card,#tray{display:none!important}
+</style></head>
+<body>
+<div class="app">
+<header class="top"><svg class="decor" viewBox="0 0 300 120" aria-hidden="true" preserveAspectRatio="xMaxYMid slice"><ellipse cx="238" cy="52" rx="52" ry="38" transform="rotate(-28 238 52)" fill="#3cb54c" opacity=".55"/><path d="M200 112Q250 70 262 4" fill="none" stroke="#d6de28" stroke-width="9" stroke-linecap="round" opacity=".7"/><path d="M262 76Q300 60 316 20L320 120H210Q262 112 262 76z" fill="#0e76b5" opacity=".45"/></svg><div class="row"><div class="logo"><svg class="mk" width="50" height="50" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gh" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0e76b5"/><stop offset=".55" stop-color="#0e76b5"/><stop offset="1" stop-color="#3cb54c"/></linearGradient></defs><path d="M4 28A24 24 0 0 1 28 4H60V36A24 24 0 0 1 36 60H4Z" fill="url(#gh)" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 60C26 58 46 44 60 4" fill="none" stroke="#d6de28" stroke-width="3" stroke-linecap="round" opacity=".95" transform="translate(-1 0) scale(.93) translate(4 3)"/><path d="M35 27V38a8.5 8.5 0 0 1-8.5 8.5A8.5 8.5 0 0 1 21 44.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="16.5" r="4.6" fill="#d6de28"/></svg><div class="wm"><b>Jamsos<i>.Ai</i></b><small>sahabat jaminan sosial pekerja</small></div></div><div class="partner2"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/BPJS_Ketenagakerjaan_logo.svg" alt="Logo BPJS Ketenagakerjaan"></div></div></header>
+<main id="log" aria-live="polite"></main>
+<div class="credit">Dikembangkan oleh <b>BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta</b> · Inisiator: <b>Lucky Aulia Keizman</b></div><div class="note">Jamsos.ai adalah asisten AI. Jangan bagikan OTP, PIN, kata sandi, NIK, atau nomor kartu di sini. Untuk angka dan aturan terbaru, pastikan ke kanal resmi.</div>
+<form id="f"><textarea id="q" rows="1" placeholder="Tulis pertanyaan Anda…" aria-label="Pesan"></textarea><button class="send" id="s" type="submit">Kirim</button></form>
+</div>
+<script>
+const OPENING="Halo, saya Jamsos.ai, sahabat jaminan sosial pekerja, dikembangkan oleh BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta. Ada yang bisa saya bantu hari ini?";
+const CHIPS=["Manfaat program","Panduan JMO","Klaim JHT","MLT & BSU","Cari kantor terdekat","Perlindungan pekerja mandiri"];
+
+const log=document.getElementById('log'),f=document.getElementById('f'),q=document.getElementById('q'),sb=document.getElementById('s');
+const hist=[{role:'assistant',content:OPENING}];let busy=false,ctl=null;
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+function inline(s){return esc(s).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/(https?:\/\/[^\s<)]+[^\s<).,;])/g,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>')}
+const SOC=[['Instagram BPJS Ketenagakerjaan','@bpjs.ketenagakerjaan','https://www.instagram.com/bpjs.ketenagakerjaan','ig','IG'],['TikTok BPJS Ketenagakerjaan','@BPJSKetenagakerjaan','https://www.tiktok.com/@BPJSKetenagakerjaan','tt','TT'],['Instagram KCP Tangerang Bandara Soetta','@jworks_soetta.bersinar','https://www.instagram.com/jworks_soetta.bersinar','kcp','IG']];
+function socCard(){return '<div class="soc">'+SOC.map(s=>'<a class="socbtn '+s[3]+'" href="'+s[2]+'" target="_blank" rel="noopener noreferrer"><span class="si">'+s[4]+'</span><span><b>'+s[0]+'</b><small>'+s[1]+'</small></span></a>').join('')+'</div>'}
+function mapCard(m){const pt=m.split('|').map(x=>x.trim()),pl=pt[0],of=pt[1];const query=encodeURIComponent(of?of+' '+pl:'BPJS Ketenagakerjaan '+pl);return '<a class="mapbtn" href="https://www.google.com/maps/search/?api=1&amp;query='+query+'" target="_blank" rel="noopener noreferrer"><span class="pn">📍</span><span><b>'+(of?'Lihat '+esc(of)+' di peta':'Cari kantor BPJS Ketenagakerjaan terdekat')+'</b><small>'+esc(pl)+' · hasil dari Google Maps</small></span></a><a class="lapak" href="https://lapakasik.go.id" target="_blank" rel="noopener noreferrer"><span class="cal">🗓️</span><span><b>Wajib daftar jadwal dulu</b> sebelum datang ke kantor, lewat lapakasik.go.id</span></a>'}
+function md(t){let map=null,soc=false;t=t.replace(/\[\[PETA:\s*([^\]]+?)\s*\]\]/,(_,p)=>{map=p;return ''}).replace(/\[\[SOSMED\]\]/,()=>{soc=true;return ''}).replace(/\[\[[^\]]*$/,'');const out=[];let list=null;
+for(const ln of t.split('\n')){const o=ln.match(/^\s*\d+[.)]\s+(.*)/),u=ln.match(/^\s*[-*]\s+(.*)/);
+if(o||u){const tag=o?'ol':'ul';if(list!==tag){if(list)out.push('</'+list+'>');out.push('<'+tag+'>');list=tag}out.push('<li>'+inline((o||u)[1])+'</li>')}
+else{if(list){out.push('</'+list+'>');list=null}if(ln.trim())out.push('<p>'+inline(ln)+'</p>')}}
+if(list)out.push('</'+list+'>');return out.join('')+(map?mapCard(map):'')+(soc?socCard():'')}
+function add(cls,text,raw){const d=document.createElement('div');d.className='m '+cls;if(raw)d.textContent=text;else d.innerHTML=md(text);log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
+const hero=document.createElement('div');hero.className='hero';hero.innerHTML='<div class="mkwrap"><svg class="mk" width="92" height="92" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="gx" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0e76b5"/><stop offset=".55" stop-color="#0e76b5"/><stop offset="1" stop-color="#3cb54c"/></linearGradient></defs><path d="M4 28A24 24 0 0 1 28 4H60V36A24 24 0 0 1 36 60H4Z" fill="url(#gx)" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/><path d="M4 60C26 58 46 44 60 4" fill="none" stroke="#d6de28" stroke-width="3" stroke-linecap="round" opacity=".95" transform="translate(-1 0) scale(.93) translate(4 3)"/><path d="M35 27V38a8.5 8.5 0 0 1-8.5 8.5A8.5 8.5 0 0 1 21 44.5" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/><circle cx="35" cy="16.5" r="4.6" fill="#d6de28"/></svg></div><h2>Halo, saya Jamsos<span>.Ai</span></h2><p class="sub">Pilih topik di bawah, atau langsung ketik pertanyaan Anda mengenai BPJS Ketenagakerjaan.</p><div class="cards"><button type="button" class="card" data-q="Manfaat program" style="--c:#2b8a3a"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg></span><b>Manfaat program</b><small>JHT, JKK, JKM, JP, dan JKP</small></button><button type="button" class="card" data-q="Panduan JMO" style="--c:#0e76b5"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg></span><b>Panduan JMO</b><small>Daftar, verifikasi wajah, cek saldo</small></button><button type="button" class="card" data-q="Klaim JHT" style="--c:#0c5499"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h13v4"/><rect x="3" y="7" width="18" height="13" rx="2.5"/><circle cx="16.5" cy="13.5" r="1.2"/></svg></span><b>Klaim JHT</b><small>Syarat dan langkah pengajuan</small></button><button type="button" class="card" data-q="MLT &amp; BSU" style="--c:#6b7a0c"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="9" width="18" height="11" rx="2"/><path d="M12 9v11M3 13h18"/><path d="M12 9c-1-4-5-4-5-1.5S10 9 12 9zm0 0c1-4 5-4 5-1.5S14 9 12 9z"/></svg></span><b>MLT &amp; BSU</b><small>Manfaat tambahan dan bantuan upah</small></button><button type="button" class="card" data-q="Cari kantor terdekat" style="--c:#1f7a2f"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg></span><b>Cari kantor terdekat</b><small>Sebut kota Anda, langsung ke peta kantor</small></button><button type="button" class="card" data-q="Perlindungan pekerja mandiri" style="--c:#0e76b5"><span class="ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.5 4.5-6 8-6s7 1.5 8 6"/></svg></span><b>Perlindungan pekerja mandiri</b><small>Jalur BPU bagi yang bekerja sendiri</small></button></div><div class="bcard"><img src="https://upload.wikimedia.org/wikipedia/commons/c/c3/BPJS_Ketenagakerjaan_logo.svg" alt="Logo BPJS Ketenagakerjaan"></div><br><div class="by">Inisiator: <b>Lucky Aulia Keizman</b><br>BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta</div>';log.appendChild(hero);hero.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>send(b.dataset.q));
+add('bot',OPENING);
+const chipsEl=document.createElement('div');chipsEl.className='chips';
+CHIPS.forEach(c=>{const b=document.createElement('button');b.type='button';b.textContent=c;b.onclick=()=>send(c);chipsEl.appendChild(b)});
+
+async function send(text){text=text.trim();if(!text||busy)return;busy=true;sb.disabled=true;chipsEl.remove();
+add('me',text,true);q.value='';q.style.height='auto';hist.push({role:'user',content:text});
+const bub=add('bot','Mengetik…');
+try{
+ctl=new AbortController();
+const res=await fetch('/.netlify/functions/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:hist.slice(1).map(m=>({role:m.role,content:m.content}))}),signal:ctl.signal});
+if(res.status===429)throw {code:'rate_limited'};
+if(!res.ok)throw {code:'unavailable'};
+const data=await res.json();const ans=data.text||'';
+if(!ans)throw {code:'unavailable'};
+bub.innerHTML=md(ans);hist.push({role:'assistant',content:ans})}
+catch(e){hist.pop();bub.remove();const c=e&&e.code;
+add('err',c==='rate_limited'?'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.':'Layanan sedang tidak dapat dihubungi. Silakan coba lagi sebentar lagi.',true)}
+busy=false;sb.disabled=false;q.focus();log.scrollTop=log.scrollHeight}
+f.addEventListener('submit',e=>{e.preventDefault();send(q.value)});
+q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(q.value)}});
+q.addEventListener('input',()=>{q.style.height='auto';q.style.height=Math.min(q.scrollHeight,120)+'px'});
+</script>
+</body>
+</html>
