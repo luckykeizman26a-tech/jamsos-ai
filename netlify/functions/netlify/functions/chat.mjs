@@ -3,128 +3,96 @@ Anda adalah Jamsos.ai, asisten kecerdasan buatan sahabat jaminan sosial pekerja 
 Jamsos.ai dikembangkan oleh BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta (Inisiator: Lucky Aulia Keizman).
 
 TUGAS UTAMA:
-1. Menjawab pertanyaan seputar program BPJS Ketenagakerjaan:
-   - JHT (Jaminan Hari Tua): syarat pencairan, klaim lewat aplikasi JMO (saldo < Rp10 juta) atau Lapak Asik (lapakasik.go.id), dan syarat dokumen.
-   - JKK (Jaminan Kecelakaan Kerja): perlindungan saat berangkat, bekerja, hingga kembali ke rumah, serta pengobatan tanpa batas biaya sesuai indikasi medis.
-   - JKM (Jaminan Kematian): santunan meninggal dunia bukan akibat kecelakaan kerja (total santunan Rp42 juta + beasiswa anak hingga Rp174 juta untuk 2 orang anak).
-   - JP (Jaminan Pensiun): manfaat pensiun bulanan atau lump sum bagi pekerja formal (PU).
-   - JKP (Jaminan Kehilangan Pekerjaan): uang tunai, akses informasi pasar kerja, dan pelatihan kerja bagi korban PHK.
-   - MLT (Manfaat Layanan Tambahan) & BSU (Bantuan Subsidi Upah jika sedang aktif).
-   - Perlindungan Pekerja Mandiri/BPU (Bukan Penerima Upah): pendaftaran mandiri (mulai dari Rp16.800/bulan untuk JKK & JKM).
-2. Membantu kendala penggunaan aplikasi JMO (Jamsostek Mobile): verifikasi biometrik wajah, update data, kartu digital, dan cek saldo.
-3. Menjaga kerahasiaan data pribadi: ingatkan pengguna untuk tidak membagikan NIK, nomor rekening, PIN, atau OTP secara sembarangan.
-
-FORMAT & TAG KHUSUS SISTEM:
-- Jika pengguna bertanya tentang lokasi kantor cabang atau mencari kantor terdekat di suatu kota/daerah, sertakan tag peta di akhir jawaban dengan format:
-  [[PETA: Nama Kota/Wilayah | BPJS Ketenagakerjaan Nama Cabang]]
-  Contoh: [[PETA: Tangerang | BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta]]
-- Jika pengguna menanyakan akun media sosial resmi atau kanal resmi, sertakan tag:
-  [[SOSMED]]
-- Gunakan format markdown tebal (**teks**) dan daftar poin/nomor agar rapi dan mudah dibaca.
-- Arahkan ke kanal resmi: Call Center 175, aplikasi JMO, lapakasik.go.id, atau bpjsketenagakerjaan.go.id.
+1. Menjawab pertanyaan seputar program BPJS Ketenagakerjaan (JHT, JKK, JKM, JP, JKP, MLT, BPU).
+2. Membantu kendala penggunaan aplikasi JMO (verifikasi wajah, update data, cek saldo).
+3. Menjaga kerahasiaan data pribadi (ingatkan agar tidak membagikan NIK, PIN, OTP).
+4. Gunakan format markdown tebal (**teks**) dan daftar poin agar rapi.
+5. Jika ditanya lokasi kantor cabang/terdekat, sertakan tag:
+   [[PETA: Nama Kota/Wilayah | BPJS Ketenagakerjaan Nama Cabang]]
+6. Jika ditanya media sosial resmi, sertakan tag:
+   [[SOSMED]]
 `.trim();
 
-export default async (req) => {
-  const allowedOrigin = process.env.ALLOWED_ORIGIN || "*";
-  const headers = {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Content-Type": "application/json"
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json"
+};
+
+async function callGemini(messages, apiKey, model) {
+  const contents = messages.map((m) => ({
+    role: m.role === "assistant" ? "model" : "user",
+    parts: [{ text: m.content || "" }]
+  }));
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+  const payload = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
   };
 
-  if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers });
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Gemini API Error:", res.status, errText);
+    throw new Error(`Gemini Error ${res.status}: ${errText}`);
   }
 
-  if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers
-    });
-  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  return text;
+}
+
+// Handler Netlify Functions v2 (Modern Request / Response)
+export default async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== "POST") return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: corsHeaders });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "GEMINI_API_KEY belum dikonfigurasi di Netlify." }),
-      { status: 500, headers }
-    );
+    console.error("GEMINI_API_KEY is missing in Netlify environment variables!");
+    return new Response(JSON.stringify({ error: "API key missing" }), { status: 500, headers: corsHeaders });
   }
 
   const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
 
   try {
-    const { messages = [], images = [] } = await req.json();
-
-    const contents = messages.map((m, idx) => {
-      const isModel = m.role === "assistant";
-      const parts = [{ text: m.content || "" }];
-
-      if (!isModel && idx === messages.length - 1 && Array.isArray(images) && images.length > 0) {
-        images.forEach((imgBase64) => {
-          parts.push({
-            inlineData: {
-              mimeType: "image/jpeg",
-              data: imgBase64
-            }
-          });
-        });
-      }
-
-      return {
-        role: isModel ? "model" : "user",
-        parts
-      };
-    });
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-    const payload = {
-      systemInstruction: {
-        parts: [{ text: SYSTEM }]
-      },
-      contents: contents,
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 2048
-      }
-    };
-
-    const apiRes = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
-
-    if (apiRes.status === 429) {
-      return new Response(JSON.stringify({ error: "Rate limit reached" }), {
-        status: 429,
-        headers
-      });
-    }
-
-    if (!apiRes.ok) {
-      const errText = await apiRes.text();
-      console.error("Gemini Error:", apiRes.status, errText);
-      return new Response(JSON.stringify({ error: "Gagal memanggil Gemini API" }), {
-        status: 502,
-        headers
-      });
-    }
-
-    const data = await apiRes.json();
-    const textResponse = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-
-    return new Response(JSON.stringify({ text: textResponse }), {
-      status: 200,
-      headers
-    });
+    const { messages = [] } = await req.json();
+    const text = await callGemini(messages, apiKey, model);
+    return new Response(JSON.stringify({ text }), { status: 200, headers: corsHeaders });
   } catch (err) {
-    console.error("Server Error:", err);
-    return new Response(
-      JSON.stringify({ error: "Terjadi kesalahan server internal." }),
-      { status: 500, headers }
-    );
+    console.error("Handler error:", err);
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: corsHeaders });
+  }
+};
+
+// Handler Netlify Functions v1 (AWS Lambda Handler)
+export const handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") return { statusCode: 204, headers: corsHeaders, body: "" };
+  if (event.httpMethod !== "POST") return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: "Method not allowed" }) };
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.error("GEMINI_API_KEY is missing in Netlify environment variables!");
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "API key missing" }) };
+  }
+
+  const model = process.env.GEMINI_MODEL || "gemini-1.5-flash";
+
+  try {
+    const { messages = [] } = JSON.parse(event.body || "{}");
+    const text = await callGemini(messages, apiKey, model);
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ text }) };
+  } catch (err) {
+    console.error("Handler error:", err);
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
   }
 };
