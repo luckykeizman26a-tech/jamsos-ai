@@ -15,9 +15,6 @@
 //   GEMINI_THINKING_BUDGET  angka token berpikir (0 = matikan). Kosongkan jika ragu.
 //   ALLOWED_ORIGIN          default https://aisoetta.netlify.app
 // CATATAN: variabel lama GEMINI_MODEL (tanpa S) tidak dipakai lagi. Hapus dari Netlify.
-//
-// Jika timeout fungsi Netlify Anda lebih dari 10 detik, naikkan GEMINI_TOTAL_MS
-// (misalnya 24000) dan GEMINI_ATTEMPT_MS (misalnya 14000) lewat environment variable.
 
 const SYSTEM = `
 Anda adalah Jamsos.ai, asisten AI sahabat jaminan sosial pekerja resmi dari BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta (Inisiator: Lucky Aulia Keizman).
