@@ -1,15 +1,23 @@
 // netlify/functions/chat.mjs
-// Jamsos.Ai - Netlify Function (v2) untuk Gemini API.
-// Kontrak dengan frontend (TIDAK berubah dari versi lama):
+// Jamsos.Ai - Netlify Function (v2) untuk Gemini API. VERSI LENGKAP.
+//
+// Kontrak dengan frontend (tidak berubah dari versi lama):
 //   Request : POST { "messages": [ { "role": "user" | "assistant", "content": "..." }, ... ] }
 //   Sukses  : 200 { "text": "..." }
 //   Gagal   : 4xx/5xx { "error": "pesan ramah untuk pengunjung" }
+//   Tes cepat: GET /.netlify/functions/chat  ->  { "ok": true, ... }
 //
-// Environment variable di Netlify:
-//   GEMINI_API_KEY  (wajib)
-//   GEMINI_MODELS   (opsional) daftar model dipisah koma, urutan = prioritas
-//   ALLOWED_ORIGIN  (opsional) default https://aisoetta.netlify.app
+// Environment variable di Netlify (semua opsional kecuali yang pertama):
+//   GEMINI_API_KEY          (WAJIB)
+//   GEMINI_MODELS           daftar model dipisah koma, urutan = prioritas
+//   GEMINI_TOTAL_MS         total waktu maksimal per permintaan (default 9300)
+//   GEMINI_ATTEMPT_MS       waktu maksimal per percobaan model (default 9000)
+//   GEMINI_THINKING_BUDGET  angka token berpikir (0 = matikan). Kosongkan jika ragu.
+//   ALLOWED_ORIGIN          default https://aisoetta.netlify.app
 // CATATAN: variabel lama GEMINI_MODEL (tanpa S) tidak dipakai lagi. Hapus dari Netlify.
+//
+// Jika timeout fungsi Netlify Anda lebih dari 10 detik, naikkan GEMINI_TOTAL_MS
+// (misalnya 24000) dan GEMINI_ATTEMPT_MS (misalnya 14000) lewat environment variable.
 
 const SYSTEM = `
 Anda adalah Jamsos.ai, asisten AI sahabat jaminan sosial pekerja resmi dari BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta (Inisiator: Lucky Aulia Keizman).
@@ -31,12 +39,21 @@ const API_BASE = "https://generativelanguage.googleapis.com/v1beta";
 // model "lite" memberi cadangan jatah harian yang terpisah (verifikasi di AI Studio).
 const DEFAULT_MODELS = ["gemini-flash-latest", "gemini-flash-lite-latest"];
 
+const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : d);
+
 const MAX_MESSAGE_CHARS = 2000;
 const MAX_HISTORY_MESSAGES = 6;
 
-// Netlify membatasi fungsi sinkron sekitar 10 detik; sisakan ruang aman.
-const TOTAL_BUDGET_MS = 8500;
-const PER_ATTEMPT_MS = 6500;
+// Batas waktu. Default aman untuk timeout Netlify 10 detik.
+const TOTAL_BUDGET_MS = num(process.env.GEMINI_TOTAL_MS, 9300);
+const PER_ATTEMPT_MS = num(process.env.GEMINI_ATTEMPT_MS, 9000);
+
+// Opsional: batasi "proses berpikir" model agar balasan lebih cepat.
+const THINKING_RAW = process.env.GEMINI_THINKING_BUDGET;
+const THINKING_BUDGET =
+  THINKING_RAW !== undefined && THINKING_RAW !== "" && Number.isFinite(Number(THINKING_RAW))
+    ? Number(THINKING_RAW)
+    : null;
 
 // Pembatasan per IP (best-effort: memori hanya per instance fungsi).
 const RATE_LIMIT_MAX = 10;
@@ -60,7 +77,7 @@ function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": process.env.ALLOWED_ORIGIN || "https://aisoetta.netlify.app",
     "Access-Control-Allow-Headers": "Content-Type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store",
   };
@@ -134,14 +151,24 @@ function parseRetrySeconds(errText) {
 function extractReply(data) {
   const parts = data?.candidates?.[0]?.content?.parts;
   if (Array.isArray(parts)) {
-    const text = parts.map((p) => p?.text || "").join("").trim();
+    // Abaikan bagian "thought" jika ada, ambil hanya teks jawaban.
+    const text = parts
+      .filter((p) => !p?.thought)
+      .map((p) => p?.text || "")
+      .join("")
+      .trim();
     if (text) return text;
   }
   return "";
 }
 
 // ---------- Panggilan ke Gemini ----------
-async function callGemini(model, contents, timeoutMs, apiKey) {
+async function callGemini(model, contents, timeoutMs, apiKey, useThinking) {
+  const generationConfig = { temperature: 0.6, maxOutputTokens: 1200 };
+  if (useThinking && THINKING_BUDGET !== null) {
+    generationConfig.thinkingConfig = { thinkingBudget: THINKING_BUDGET };
+  }
+
   const res = await fetch(`${API_BASE}/models/${model}:generateContent`, {
     method: "POST",
     headers: {
@@ -151,7 +178,7 @@ async function callGemini(model, contents, timeoutMs, apiKey) {
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM }] },
       contents,
-      generationConfig: { temperature: 0.6, maxOutputTokens: 800 },
+      generationConfig,
     }),
     signal: AbortSignal.timeout(timeoutMs),
   });
@@ -195,24 +222,32 @@ async function runModels(models, contents, state, apiKey) {
     if ((blockedUntil.get(model) || 0) > Date.now()) continue;
     state.tried.add(model);
 
+    let useThinking = THINKING_BUDGET !== null;
+
     for (let attempt = 0; attempt < 2; attempt++) {
       const remaining = TOTAL_BUDGET_MS - (Date.now() - state.start);
       if (remaining < 1200) return null;
 
+      const t0 = Date.now();
       let r;
       try {
-        r = await callGemini(model, contents, Math.min(PER_ATTEMPT_MS, remaining), apiKey);
+        r = await callGemini(model, contents, Math.min(PER_ATTEMPT_MS, remaining), apiKey, useThinking);
       } catch (e) {
-        console.warn(`[chat] ${model} timeout/jaringan: ${e?.name || e}`);
+        console.warn(`[chat] ${model} timeout/jaringan setelah ${Date.now() - t0} ms: ${e?.name || e}`);
+        state.timedOut = true;
         break;
       }
+      const took = Date.now() - t0;
 
       if (r.ok) {
         const reply = extractReply(r.data);
-        if (reply) return { reply, model };
+        if (reply) {
+          console.log(`[chat] ${model} berhasil dalam ${took} ms`);
+          return { reply, model };
+        }
         const block = r.data?.promptFeedback?.blockReason;
         const finish = r.data?.candidates?.[0]?.finishReason;
-        console.warn(`[chat] ${model} balasan kosong (${block || finish || "tanpa alasan"})`);
+        console.warn(`[chat] ${model} balasan kosong (${block || finish || "tanpa alasan"}) dalam ${took} ms`);
         if (block || finish === "SAFETY") {
           return {
             reply: "Maaf, pertanyaan tersebut tidak dapat saya jawab. Silakan ajukan pertanyaan lain seputar BPJS Ketenagakerjaan.",
@@ -222,8 +257,13 @@ async function runModels(models, contents, state, apiKey) {
         break;
       }
 
-      console.warn(`[chat] ${model} gagal (${r.status}): ${r.raw.slice(0, 300)}`);
+      console.warn(`[chat] ${model} gagal (${r.status}) dalam ${took} ms: ${r.raw.slice(0, 300)}`);
 
+      // Parameter thinking tidak cocok dengan model ini: ulangi tanpa parameter itu.
+      if (r.status === 400 && useThinking && /thinking/i.test(r.raw)) {
+        useThinking = false;
+        continue;
+      }
       if (r.status === 404) {
         blockedUntil.set(model, Date.now() + 6 * 3_600_000);
         state.sawNotFound = true;
@@ -256,8 +296,22 @@ async function runModels(models, contents, state, apiKey) {
 // ---------- Handler utama ----------
 export default async (req, context) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders() });
+
+  // Tes cepat lewat browser: tidak memanggil Gemini, tidak memakai kuota.
+  if (req.method === "GET") {
+    return json(200, {
+      ok: true,
+      versi: "lengkap",
+      apiKeyTerpasang: Boolean(process.env.GEMINI_API_KEY),
+      model: getCandidateModels(),
+      totalMs: TOTAL_BUDGET_MS,
+      perPercobaanMs: PER_ATTEMPT_MS,
+      thinkingBudget: THINKING_BUDGET,
+    });
+  }
+
   if (req.method !== "POST") {
-    return json(405, { error: "Metode tidak diizinkan." }, { Allow: "POST" });
+    return json(405, { error: "Metode tidak diizinkan." }, { Allow: "GET, POST" });
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
