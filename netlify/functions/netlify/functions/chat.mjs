@@ -25,11 +25,12 @@ async function callGemini(messages, apiKey) {
     parts: [{ text: m.content || "" }]
   }));
 
-  // Menggunakan alias resmi gemini-flash-latest yang aktif di Google AI Studio
+  // Mengutamakan model resmi yang diminta Google: gemini-3.8-flash
   const models = [
     process.env.GEMINI_MODEL,
-    "gemini-flash-latest",
-    "gemini-2.5-flash"
+    "gemini-3.8-flash",
+    "gemini-3.8-flash-lite",
+    "gemini-flash-latest"
   ].filter(Boolean);
 
   let lastError = "";
@@ -66,7 +67,7 @@ async function callGemini(messages, apiKey) {
     }
   }
 
-  throw new Error(lastError || "Gagal memanggil model Google.");
+  throw new Error(lastError || "Semua model gagal");
 }
 
 export default async (req) => {
