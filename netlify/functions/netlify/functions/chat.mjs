@@ -1,12 +1,11 @@
 const SYSTEM = `
-Anda adalah Jamsos.ai, asisten kecerdasan buatan sahabat jaminan sosial pekerja yang ramah, profesional, solutif, dan informatif.
-Jamsos.ai dikembangkan oleh BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta (Inisiator: Lucky Aulia Keizman).
+Anda adalah Jamsos.ai, asisten AI sahabat jaminan sosial pekerja resmi dari BPJS Ketenagakerjaan KCP Tangerang Bandara Soetta (Inisiator: Lucky Aulia Keizman).
 
-TUGAS UTAMA:
-1. Menjawab pertanyaan seputar program BPJS Ketenagakerjaan (JHT, JKK, JKM, JP, JKP, MLT, BPU).
-2. Membantu kendala penggunaan aplikasi JMO (verifikasi wajah, update data, cek saldo).
-3. Menjaga kerahasiaan data pribadi (jangan bagikan NIK, PIN, OTP).
-4. Gunakan format markdown tebal (**teks**) dan daftar poin agar rapi.
+ATURAN RESPON CEPAT:
+1. Jawab pertanyaan dengan ringkas, padat, ramah, dan solutif (langsung ke intinya tanpa berbelit-belit).
+2. Kuasai program: JHT, JKK, JKM, JP, JKP, BPU, serta penggunaan aplikasi JMO (verifikasi wajah, klaim, cek saldo).
+3. Ingatkan untuk tidak memberikan data rahasia (PIN, OTP, nomor kartu).
+4. Gunakan format tebal (**teks**) dan poin-poin singkat agar mudah dibaca di ponsel.
 5. Jika ditanya lokasi kantor cabang/terdekat, sertakan tag:
    [[PETA: Nama Kota/Wilayah | BPJS Ketenagakerjaan Nama Cabang]]
 6. Jika ditanya media sosial resmi, sertakan tag:
@@ -21,51 +20,43 @@ const corsHeaders = {
 };
 
 async function callGemini(messages, apiKey) {
-  const contents = messages.map((m) => ({
+  // Hanya ambil 4 pesan terakhir agar beban memori ringan dan loading sangat cepat
+  const recentMessages = messages.slice(-4).map((m) => ({
     role: m.role === "assistant" ? "model" : "user",
     parts: [{ text: m.content || "" }]
   }));
 
-  // Daftar model aktif Google (memprioritaskan 2.0-flash yang didukung Google saat ini)
-  const models = [
-    process.env.GEMINI_MODEL,
-    "gemini-2.0-flash",
-    "gemini-2.5-flash",
-    "gemini-flash-latest"
-  ].filter(Boolean);
+  // Gunakan gemini-2.0-flash yang paling cepat dan resmi aktif di Google AI Studio
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  let lastError = "";
-
-  for (const model of models) {
-    try {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-      const payload = {
-        systemInstruction: { parts: [{ text: SYSTEM }] },
-        contents: contents,
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 }
-      };
-
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
-        if (text) return text;
-      } else {
-        const errText = await res.text();
-        console.warn(`Percobaan model ${model} gagal (${res.status}): ${errText}`);
-        lastError = errText;
-      }
-    } catch (e) {
-      lastError = e.message;
+  const payload = {
+    systemInstruction: { parts: [{ text: SYSTEM }] },
+    contents: recentMessages,
+    generationConfig: {
+      temperature: 0.6,
+      maxOutputTokens: 800 // Dibatasi agar AI merespons instan dalam 1-2 detik
     }
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error("Gemini API Error:", res.status, errText);
+    if (res.status === 429) {
+      throw new Error("Kuota gratis Google AI sedang padat (Limit tercapai). Silakan tunggu 1 menit lalu coba lagi.");
+    }
+    throw new Error(`Google Error ${res.status}: ${errText}`);
   }
 
-  throw new Error(lastError || "Semua model gagal merespons");
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "";
+  return text || "Maaf, silakan ulangi pertanyaan Anda.";
 }
 
 export default async (req) => {
@@ -74,7 +65,7 @@ export default async (req) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "GEMINI_API_KEY missing" }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: "Kunci GEMINI_API_KEY belum terpasang di Netlify." }), { status: 500, headers: corsHeaders });
   }
 
   try {
@@ -92,7 +83,7 @@ export const handler = async (event) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "GEMINI_API_KEY missing" }) };
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Kunci GEMINI_API_KEY belum terpasang di Netlify." }) };
   }
 
   try {
